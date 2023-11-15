@@ -113,14 +113,14 @@ rootRouter.get('/v2/on_order_status', authentication(), orderStatusController.on
 // select order v1
 rootRouter.post(
     '/v1/select', 
-    authentication(),
+    // authentication(),
     selectOrderController.selectOrder,
 );
 
 // select order v2
 rootRouter.post(
     '/v2/select', 
-    authentication(),
+    // authentication(),
     selectOrderController.selectMultipleOrder,
 );
 
@@ -131,10 +131,18 @@ rootRouter.post(
 );
 
 // on select order v1
-rootRouter.get('/v1/on_select', authentication(), selectOrderController.onSelectOrder);
+rootRouter.get(
+    '/v1/on_select', 
+    // authentication(),
+    selectOrderController.onSelectOrder
+);
 
 // on select order v2
-rootRouter.get('/v2/on_select', authentication(), selectOrderController.onSelectMultipleOrder);
+rootRouter.get(
+    '/v2/on_select', 
+    // authentication(), 
+    selectOrderController.onSelectMultipleOrder
+);
 
 rootRouter.post('/v1/update', authentication(), updateOrderController.update);
 
