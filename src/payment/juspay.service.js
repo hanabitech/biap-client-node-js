@@ -28,11 +28,13 @@ class JuspayService {
             let result = null;
 
             if (payload) {
+                const stringifiedPayload = JSON.stringify(payload);
+
                 // const privateKeyHyperBeta = await accessSecretVersion(process.env.JUSPAY_SECRET_KEY_PATH);
                 const privateKeyHyperBeta = await readFile(process.env.JUSPAY_SECRET_KEY_PATH, 'utf-8');
 
                 const encryptKey = new NodeRSA(privateKeyHyperBeta, 'pkcs1');
-                result = encryptKey.sign(payload, 'base64', 'utf8');
+                result = encryptKey.sign(stringifiedPayload, 'base64', 'utf8');
             }
             return result;
 
