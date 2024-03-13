@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 import { PAYMENT_COLLECTED_BY, PAYMENT_TYPES, PROTOCOL_PAYMENT } from "../../../utils/constants.js";
-import { protocolConfirm } from '../../../utils/protocolApis/index.js';
+import {protocolConfirm, protocolGetDumps} from '../../../utils/protocolApis/index.js';
 import OrderMongooseModel from "../../v1/db/order.js";
 
 class BppConfirmService {
@@ -125,7 +125,15 @@ class BppConfirmService {
             const count = await OrderMongooseModel.count({
             });
 
-            console.log("count-------------------------------->",count)
+
+            //get TAT object from select request
+
+            let on_select = await protocolGetDumps({type:"on_select",transaction_id:context.transaction_id})
+
+            console.log("on_select------------->",on_select)
+
+            let on_select_fulfillments = on_select.request?.message?.order?.fulfillments??[]
+
 
             let orderId = `${n.getFullYear()}-${this.pad(n.getMonth()+1)}-${this.pad(n.getDate())}-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -134,9 +142,6 @@ class BppConfirmService {
             let value = ""+qoute?.price?.value
             qoute.price.value = value
 
-            console.log("orderId-------------------------------->",orderId)
-            console.log("confirm----------------------qoute---------->",qoute)
-            console.log("confirm----------------------order?.jusPayTransactionId/---------->",order?.jusPayTransactionId)
 
             //find terms from init call
 
@@ -161,7 +166,7 @@ class BppConfirmService {
                         [
                             {
                                 "code":"tax_number",
-                                "value":"BUYER-APP-GSTN-ONDC"
+                                "value":"GSTIN1234567890"
                             }
                         ]
                 }
@@ -211,9 +216,18 @@ class BppConfirmService {
                             }) || [],
                         provider: {id:storedOrder?.provider.id,locations:storedOrder?.provider.locations},
                         fulfillments: [...storedOrder.fulfillments].map((fulfillment) => {
+
+                            console.log(on_select_fulfillments)
+                            console.log(fulfillment)
+                           let mappedFulfillment = on_select_fulfillments.find((data)=>{return data.id==fulfillment?.id});
+
+                            console.log("mappedFulfillment",mappedFulfillment)
+                            console.log(mappedFulfillment)
+
                             return {
+                                '@ondc/org/TAT':mappedFulfillment['@ondc/org/TAT'],
                                 id: fulfillment?.id,
-                                tracking: fulfillment?.tracking,
+                                tracking: fulfillment?.tracking??false,
                                 end: {
                                     contact: {
                                         email: fulfillment?.end?.contact?.email,
@@ -240,12 +254,18 @@ class BppConfirmService {
                             }
                         }),
                         payment: {
-                            uri:"https://juspay.in/", //TODO:In case of pre-paid collection by the buyer app, the payment link is rendered after the buyer app sends ACK for /on_init but before calling /confirm;
-                            tl_method:"http/get",
+                            uri:order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
+                                "https://juspay.in/":
+                                undefined, //In case of pre-paid collection by the buyer app, the payment link is rendered after the buyer app sends ACK for /on_init but before calling /confirm;
+                            tl_method:order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
+                                "http/get":
+                                undefined,
                             params: {
-                                amount: order?.payment?.paid_amount?.toString(),
+                                amount: order?.payment?.paid_amount?.toFixed(2)?.toString(),
                                 currency: "INR",
-                                transaction_id:uuidv4()//payment transaction id
+                                transaction_id:order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
+                                    uuidv4():
+                                    undefined//payment transaction id
                             },
                             status: order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
                                 PROTOCOL_PAYMENT.PAID :
@@ -256,7 +276,12 @@ class BppConfirmService {
                                 PAYMENT_COLLECTED_BY.BPP,
                             '@ondc/org/buyer_app_finder_fee_type': process.env.BAP_FINDER_FEE_TYPE,
                             '@ondc/org/buyer_app_finder_fee_amount':  process.env.BAP_FINDER_FEE_AMOUNT,
-                            "@ondc/org/settlement_details":storedOrder?.settlementDetails?.["@ondc/org/settlement_details"],
+                            '@ondc/org/settlement_basis': order.payment['@ondc/org/settlement_basis']??undefined,
+                            '@ondc/org/settlement_window': order.payment['@ondc/org/settlement_window']??undefined,
+                            '@ondc/org/withholding_amount': order.payment['@ondc/org/withholding_amount']??undefined,
+                            "@ondc/org/settlement_details":order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
+                                storedOrder?.settlementDetails?.["@ondc/org/settlement_details"]:
+                                order.payment['@ondc/org/settlement_details'],
 
                         },
                         quote: {
