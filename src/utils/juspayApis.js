@@ -14,7 +14,7 @@ const getJuspayOrderStatus = async (orderId) => {
         { 
             "Accept": 'application/json',
             "x-merchantid": process.env.JUSPAY_MERCHANT_ID,
-            "Authorization": 'Basic ' + Buffer.from(process.env.JUSPAY_API_KEY).toString('base64')
+            "Authorization": 'Basic ' + Buffer.from(process.env.JUSPAY_API_KEY + ":").toString('base64')
         }
     );
 
