@@ -67,6 +67,9 @@ class BppInitService {
                 }
                 // selectitem.parent_item_id = parentItemId;
                 selectitem.fulfillment_id =item?.fulfillment_id
+
+                delete selectitem.location_id // need to remove this extraneous key
+
                 items.push(selectitem);
                 if(item.customisations){
                     for(let customisation of item.customisations){
@@ -93,6 +96,9 @@ class BppInitService {
                         }
                         selectitem.fulfillment_id =item?.fulfillment_id
                         selectitem.parent_item_id = parentItemId;
+
+                        delete selectitem.location_id // need to remove this extraneous key
+
                         items.push(selectitem);
                     }
 
@@ -127,7 +133,7 @@ class BppInitService {
                             type: order.delivery_info.type,
                             end: {
                                 contact: {
-                                    email: order.delivery_info.email,
+                                    //email: order.delivery_info.email, // no required as per contract doc, but kept is commented for future ref
                                     phone: order.delivery_info.phone
                                 },
                                 location: {
