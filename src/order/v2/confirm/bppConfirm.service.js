@@ -166,7 +166,7 @@ class BppConfirmService {
                         [
                             {
                                 "code":"tax_number",
-                                "value":"GSTIN1234567890"
+                                "value": process.env.BAP_TAX_NUMBER
                             }
                         ]
                 }
@@ -263,9 +263,9 @@ class BppConfirmService {
                             params: {
                                 amount: order?.payment?.paid_amount?.toFixed(2)?.toString(),
                                 currency: "INR",
-                                transaction_id:order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
-                                    uuidv4():
-                                    undefined//payment transaction id
+                                transaction_id: order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
+                                    order?.jusPayTransactionId //use juspay ID
+                                    : undefined //payment transaction id
                             },
                             status: order?.payment?.type === PAYMENT_TYPES["ON-ORDER"] ?
                                 PROTOCOL_PAYMENT.PAID :
